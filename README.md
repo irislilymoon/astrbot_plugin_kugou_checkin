@@ -20,7 +20,6 @@
 
 没装 Node 会提示「找不到可用的 Node」，装完 Node 或在插件配置里填 `node_path` 即可。
 
-![面板](docs/panel.png)
 
 ## 为什么不重写成 Python
 
