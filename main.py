@@ -46,7 +46,7 @@ from kugou.store import Store, now_cn, today_str, token_fingerprint  # noqa: E40
 LOGIN_HELP = (
     "登录方式：\n"
     "1. /酷狗登录 扫码 —— 生成二维码，用酷狗音乐 APP 扫\n"
-    "2. /酷狗登录 13800138000 —— 发送短信验证码\n"
+    "2. /酷狗登录 138xxxxxxxx —— 发送短信验证码\n"
     "3. /酷狗登录 验证码 123456 —— 用验证码换 token"
 )
 
