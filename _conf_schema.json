@@ -1,0 +1,43 @@
+{
+  "enable_schedule": {
+    "description": "开启每日定时签到",
+    "type": "bool",
+    "default": false,
+    "hint": "测试期建议关闭，全部手动触发。验证稳定后再打开。与服务器版 systemd timer 互斥，同一时间只能有一处运行。"
+  },
+  "run_time": {
+    "description": "每日执行时间（北京时间）",
+    "type": "string",
+    "default": "01:10",
+    "hint": "24 小时制 HH:MM。凌晨执行可抢在手动领取之前，沿用服务器版 01:10。"
+  },
+  "catch_up": {
+    "description": "启动时补跑",
+    "type": "bool",
+    "default": true,
+    "hint": "开启定时后，插件启动时若发现今天还没跑过，立即补一次。"
+  },
+  "sidecar_dir": {
+    "description": "侧车代码目录（覆盖）",
+    "type": "string",
+    "default": "",
+    "hint": "留空则使用插件数据目录下的 kgcheckin（首次启用自动解压 + 装依赖 + 打补丁）。已有可用代码目录时可填绝对路径跳过 bootstrap。"
+  },
+  "node_path": {
+    "description": "node 可执行文件路径",
+    "type": "string",
+    "default": "",
+    "hint": "留空使用 PATH 里的 node。要求 Node 20 及以上。"
+  },
+  "keep_history_days": {
+    "description": "历史记录保留天数",
+    "type": "int",
+    "default": 90
+  },
+  "checkin_timeout": {
+    "description": "单次签到超时（秒）",
+    "type": "int",
+    "default": 1800,
+    "hint": "单账号约 4 分钟（8 次领取每次间隔 30 秒），多账号按倍数放大。"
+  }
+}

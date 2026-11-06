@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>酷狗签到</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2329;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #2563eb;
+    --accent-soft: #e8f0ff;
+    --ok: #16a34a;
+    --bad: #dc2626;
+    --warn: #d97706;
+    --input: #ffffff;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f1115;
+    --card: #171a21;
+    --text: #e6e8eb;
+    --muted: #98a2b3;
+    --line: #2a2f3a;
+    --accent: #5b93ff;
+    --accent-soft: #1b2740;
+    --ok: #3ddc84;
+    --bad: #ff6b6b;
+    --warn: #f5b942;
+    --input: #10141b;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme]) {
+      --bg: #0f1115; --card: #171a21; --text: #e6e8eb; --muted: #98a2b3;
+      --line: #2a2f3a; --accent: #5b93ff; --accent-soft: #1b2740;
+      --ok: #3ddc84; --bad: #ff6b6b; --warn: #f5b942; --input: #10141b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px 20px 40px;
+    background: var(--bg); color: var(--text);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  h1 { font-size: 19px; margin: 0; }
+  h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; }
+  .head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .head .sub { color: var(--muted); font-size: 12px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 9px; border-radius: 999px; font-size: 12px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .badge.ok { background: rgba(22,163,74,.12); color: var(--ok); }
+  .badge.bad { background: rgba(220,38,38,.12); color: var(--bad); }
+  .badge.warn { background: rgba(217,119,6,.14); color: var(--warn); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; }
+  .card .k { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .card .v { font-size: 17px; font-weight: 600; word-break: break-all; }
+  .card .v.small { font-size: 14px; font-weight: 500; }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 15px; margin-bottom: 14px; }
+  .panel .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .panel .panel-head h2 { margin: 0; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .row + .row { margin-top: 9px; }
+  input[type="text"], input[type="password"], input[type="number"] {
+    background: var(--input); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 0 10px; height: 34px; font-size: 13px; outline: none; min-width: 0; flex: 1 1 130px;
+  }
+  input:focus { border-color: var(--accent); }
+  label.field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 150px; font-size: 12px; color: var(--muted); }
+  label.field input { flex: 0 0 auto; width: 100%; height: 34px; }
+  label.check { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+  button {
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    padding: 7px 13px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    transition: .15s; white-space: nowrap;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { filter: brightness(1.08); color: #fff; }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .muted { color: var(--muted); font-size: 12px; }
+  .kv { display: grid; grid-template-columns: 84px 1fr; gap: 6px 10px; font-size: 13px; }
+  .kv .k { color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  tbody tr:last-child td { border-bottom: none; }
+  .scroll { max-height: 320px; overflow: auto; }
+
+  pre.log {
+    margin: 0; padding: 10px 12px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--line);
+    font: 12px/1.5 ui-monospace, Consolas, "Courier New", monospace;
+    max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+  }
+
+  .qr-wrap { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .qr-box {
+    width: 190px; height: 190px; border-radius: 10px; border: 1px solid var(--line);
+    background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .qr-box img { width: 100%; height: 100%; object-fit: contain; }
+  .qr-empty { color: #9ca3af; font-size: 12px; text-align: center; padding: 10px; }
+
+  .list { display: flex; flex-direction: column; gap: 6px; }
+  .list-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px;
+  }
+  .list-item span { word-break: break-all; }
+
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; max-width: 420px;
+    background: var(--card); color: var(--text); border: 1px solid var(--line);
+    border-left: 4px solid var(--accent); border-radius: 10px;
+    padding: 10px 14px; font-size: 13px; box-shadow: 0 8px 26px rgba(0,0,0,.14);
+    opacity: 0; transform: translateY(8px); transition: .2s; pointer-events: none; z-index: 9;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok { border-left-color: var(--ok); }
+  .toast.bad { border-left-color: var(--bad); }
+
+  .spin { width: 12px; height: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>酷狗签到</h1>
+  <span class="badge" id="badgeState">加载中…</span>
+  <span class="sub" id="sidecarDir"></span>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="k">酷狗ID</div><div class="v" id="vAccount">—</div></div>
+  <div class="card"><div class="k">今日状态</div><div class="v" id="vToday">—</div></div>
+  <div class="card"><div class="k">VIP 到期</div><div class="v small" id="vExpire">—</div></div>
+  <div class="card"><div class="k">下次运行</div><div class="v small" id="vNext">—</div></div>
+  <div class="card"><div class="k">Token 估算</div><div class="v small" id="vToken">—</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>操作</h2>
+    <span class="muted" id="serverTime"></span>
+  </div>
+  <div class="row">
+    <button class="primary" id="btnRun">立即签到</button>
+    <button id="btnTest">测试通知</button>
+    <button class="ghost" id="btnBoot">初始化 / 重建侧车</button>
+    <span class="muted" id="runHint"></span>
+  </div>
+  <div class="row hidden" id="runBar">
+    <span class="spin"></span><span class="muted">正在签到，单账号约 4 分钟…</span>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-head"><h2>手机号登录</h2></div>
+    <div class="row">
+      <input type="text" id="phone" placeholder="11 位手机号" autocomplete="off">
+      <button id="btnSendCode">发送验证码</button>
+    </div>
+    <div class="row">
+      <input type="text" id="code" placeholder="短信验证码" autocomplete="off">
+      <button class="primary" id="btnCodeLogin">登录</button>
+    </div>
+    <div class="muted" style="margin-top:8px">手机号绑定多个酷狗账号时接口会拒绝（34175），只能扫码。</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>扫码登录</h2>
+      <button id="btnQr">生成二维码</button>
+    </div>
+    <div class="qr-wrap">
+      <div class="qr-box" id="qrBox"><div class="qr-empty">点「生成二维码」后用酷狗音乐 APP 扫</div></div>
+      <div style="flex:1;min-width:150px">
+        <div class="kv">
+          <div class="k">状态</div><div id="qrState">未开始</div>
+          <div class="k">剩余</div><div id="qrLeft">—</div>
+        </div>
+        <div class="muted" style="margin-top:10px">二维码约 2 分钟有效。生成期间签到会被占用，等扫码结束再跑。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-head"><h2>QQ 推送会话</h2><span class="muted">只走 QQ；在 QQ 里发 /酷狗绑定 最省事</span></div>
+    <div class="row">
+      <input type="text" id="bindUmo" placeholder="一般不用手填：在 QQ 里发 /酷狗绑定 会自动写入">
+      <button id="btnBindAdd">添加</button>
+    </div>
+    <div class="list" id="bindList" style="margin-top:10px"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>定时</h2></div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="enableSchedule"> 开启每日定时</label>
+      <label class="field" style="max-width:120px">执行时间
+        <input type="text" id="runTime" placeholder="01:10">
+      </label>
+      <button id="btnSaveSchedule">保存</button>
+    </div>
+    <div class="muted" style="margin-top:8px" id="scheduleHint"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>运行记录</h2>
+    <div class="row">
+      <button class="ghost" data-days="7">近 7 天</button>
+      <button class="ghost" data-days="30">近 30 天</button>
+    </div>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>时间</th><th>结果</th><th>听歌</th><th>VIP</th><th>到期</th><th>触发</th><th>备注</th></tr></thead>
+      <tbody id="historyBody"><tr><td colspan="7" class="muted">加载中…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>运行日志</h2>
+    <span class="muted" id="logHint"></span>
+  </div>
+  <pre class="log" id="logBox">（暂无）</pre>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<p class="muted" style="text-align:center;margin-top:18px">
+  签到与登录逻辑基于 develop202/kgcheckin（Node），API 层来自 MakcRe/KuGouMusicApi；本插件只做 AstrBot 适配。
+</p>
+
+<script>
+(function () {
+  "use strict";
+
+  var PLUGIN = "astrbot_plugin_kugou_checkin";
+  var state = { running: false, qr: null, qrTimer: null, pollTimer: null };
+
+  function bridge() {
+    return window.AstrBotPluginView || window.AstrBotPluginPage || null;
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    var method = opts.method || "GET";
+    var v = bridge();
+    if (v) {
+      if (method === "POST") return v.apiPost(path, opts.body || {});
+      return v.apiGet(path, opts.query || {});
+    }
+    var url = "/api/v1/plugins/extensions/" + PLUGIN + path;
+    if (opts.query) url += "?" + new URLSearchParams(opts.query).toString();
+    return fetch(url, {
+      method: method,
+      credentials: "include",
+      headers: opts.body ? { "Content-Type": "application/json" } : {},
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    }).then(function (r) { return r.json(); });
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function toast(msg, kind) {
+    var el = $("toast");
+    el.textContent = msg;
+    el.className = "toast show " + (kind || "");
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { el.className = "toast " + (kind || ""); }, 4200);
+  }
+
+  function fmtTime(ts) {
+    if (!ts) return "—";
+    var d = new Date(ts * 1000);
+    var p = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return (d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  function renderStatus(s) {
+    state.running = !!s.running;
+    $("vAccount").textContent = s.account || "未登录";
+    if (s.claimed_today) {
+      $("vToday").innerHTML = '<span style="color:var(--ok)">已领取</span>';
+    } else if (s.last_run_date && !s.last_ok) {
+      $("vToday").innerHTML = '<span style="color:var(--bad)">异常</span>';
+    } else {
+      $("vToday").textContent = "未运行";
+    }
+    $("vExpire").textContent = s.vip_expire || "未知";
+    $("vNext").textContent = s.next_run || "未开启";
+    $("vToken").textContent = (s.token_days_left === null || s.token_days_left === undefined)
+      ? "未知" : ("约 " + s.token_days_left + " 天");
+    $("serverTime").textContent = s.server_time || "";
+    $("sidecarDir").textContent = s.sidecar && s.sidecar.ready ? "" : (s.sidecar ? s.sidecar.dir : "");
+
+    var badge = $("badgeState");
+    if (s.running) {
+      badge.className = "badge"; badge.textContent = "运行中";
+    } else if (!s.sidecar || !s.sidecar.ready) {
+      badge.className = "badge warn"; badge.textContent = "侧车未就绪";
+    } else if (s.claimed_today) {
+      badge.className = "badge ok"; badge.textContent = "今日已完成";
+    } else {
+      badge.className = "badge"; badge.textContent = "待运行";
+    }
+
+    $("runBar").classList.toggle("hidden", !s.running);
+    $("btnRun").disabled = s.running;
+    var hint = s.running ? "" : (s.last_run_date ? ("上次 " + s.last_run_date) : "");
+    if (!s.bindings) {
+      hint = (hint ? hint + "；" : "") + "未绑定 QQ 会话，发 /酷狗绑定 才能收到推送";
+    }
+    $("runHint").textContent = hint;
+
+    $("scheduleHint").textContent = s.schedule_enabled
+      ? ("已开启，每天 " + s.run_time + " 执行；下次 " + s.next_run)
+      : "未开启定时，只能手动触发";
+
+    if (s.sidecar && !s.sidecar.ready && s.sidecar.log && s.sidecar.log.length) {
+      $("logHint").textContent = s.sidecar.booting ? "侧车初始化中…" : (s.sidecar.error || "");
+      if (!state.running) $("logBox").textContent = s.sidecar.log.join("\n");
+    }
+  }
+
+  function loadStatus() {
+    return api("/status").then(renderStatus).catch(function (e) {
+      toast("读取状态失败：" + e.message, "bad");
+    });
+  }
+
+  function loadHistory(days) {
+    return api("/history", { query: { days: days || 7 } }).then(function (res) {
+      var items = (res && res.items) || [];
+      var body = $("historyBody");
+      if (!items.length) {
+        body.innerHTML = '<tr><td colspan="7" class="muted">没有记录</td></tr>';
+        return;
+      }
+      body.innerHTML = items.map(function (r) {
+        var ok = r.ok ? '<span style="color:var(--ok)">成功</span>' : '<span style="color:var(--bad)">异常</span>';
+        return "<tr><td>" + fmtTime(r.ts) + "</td><td>" + ok + "</td><td>" + (r.listen || "—") +
+          "</td><td>" + (r.vip_count || 0) + "/" + (r.vip_total || 8) +
+          "</td><td>" + (r.vip_expire || "—") + "</td><td>" + (r.trigger || "—") +
+          "</td><td>" + (r.error || "") + "</td></tr>";
+      }).join("");
+    }).catch(function () {
+      $("historyBody").innerHTML = '<tr><td colspan="7" class="muted">加载失败</td></tr>';
+    });
+  }
+
+  function loadBindings() {
+    return api("/bindings").then(function (res) {
+      var items = (res && res.items) || [];
+      var box = $("bindList");
+      if (!items.length) {
+        box.innerHTML = '<div class="muted">还没有绑定任何会话</div>';
+        return;
+      }
+      box.innerHTML = items.map(function (b) {
+        return '<div class="list-item"><span>' + (b.label || b.umo) +
+          '<br><span class="muted">' + b.umo + '</span></span>' +
+          '<button class="ghost" data-remove="' + encodeURIComponent(b.umo) + '">删除</button></div>';
+      }).join("");
+    });
+  }
+
+  function loadSettings() {
+    return api("/settings").then(function (s) {
+      if (!s) return;
+      $("enableSchedule").checked = !!s.enable_schedule;
+      $("runTime").value = s.run_time || "01:10";
+    });
+  }
+
+  function loadLog() {
+    return api("/log").then(function (res) {
+      var lines = (res && res.lines) || [];
+      if (lines.length) {
+        $("logBox").textContent = lines.slice(-80).join("\n");
+        $("logBox").scrollTop = $("logBox").scrollHeight;
+      }
+      $("logHint").textContent = res && res.running ? "运行中…" : "";
+    });
+  }
+
+  function schedulePoll() {
+    clearTimeout(state.pollTimer);
+    var delay = state.running ? 3000 : 8000;
+    state.pollTimer = setTimeout(function () {
+      loadStatus().then(schedulePoll);
+      if (state.running) loadLog();
+    }, delay);
+  }
+
+  // ---------------- 事件
+
+  $("btnRun").addEventListener("click", function () {
+    var btn = this;
+    btn.disabled = true;
+    api("/run", { method: "POST" }).then(function (r) {
+      if (r && r.ok) {
+        toast(r.message || "已开始", "ok");
+        state.running = true;
+        $("runBar").classList.remove("hidden");
+        loadStatus().then(schedulePoll);
+        loadLog();
+      } else {
+        toast((r && r.message) || "启动失败", "bad");
+        btn.disabled = false;
+      }
+    }).catch(function (e) {
+      toast("启动失败：" + e.message, "bad");
+      btn.disabled = false;
+    });
+  });
+
+  $("btnTest").addEventListener("click", function () {
+    var btn = this;
+    btn.disabled = true;
+    api("/notify/test", { method: "POST" }).then(function (r) {
+      if (r && r.ok) {
+        toast("已推送测试消息到 " + r.qq + " 个 QQ 会话", "ok");
+      } else {
+        toast((r && r.errors && r.errors[0]) || "没有可用的 QQ 推送目标", "bad");
+      }
+    }).catch(function (e) {
+      toast("测试失败：" + e.message, "bad");
+    }).finally(function () { btn.disabled = false; });
+  });
+
+  $("btnBoot").addEventListener("click", function () {
+    if (!confirm("将解压源码、安装 Node 依赖并重新打补丁，首次约 1-3 分钟。继续？")) return;
+    var btn = this;
+    btn.disabled = true;
+    api("/bootstrap", { method: "POST", body: { force: true } }).then(function (r) {
+      toast((r && r.message) || "已开始", r && r.ok ? "ok" : "bad");
+      setTimeout(function () { loadStatus(); loadLog(); }, 1200);
+    }).catch(function (e) {
+      toast("启动失败：" + e.message, "bad");
+    }).finally(function () { btn.disabled = false; });
+  });
+
+  $("btnSendCode").addEventListener("click", function () {
+    var phone = $("phone").value.trim();
+    if (!/^1[3-9]\d{9}$/.test(phone)) { toast("手机号格式不对", "bad"); return; }
+    var btn = this; btn.disabled = true;
+    api("/login/phone", { method: "POST", body: { phone: phone } }).then(function (r) {
+      toast(r.message || (r.ok ? "已发送" : "发送失败"), r.ok ? "ok" : "bad");
+    }).catch(function (e) { toast(e.message, "bad"); })
+      .finally(function () { btn.disabled = false; });
+  });
+
+  $("btnCodeLogin").addEventListener("click", function () {
+    var code = $("code").value.trim();
+    if (!code) { toast("填验证码", "bad"); return; }
+    var btn = this; btn.disabled = true;
+    api("/login/code", { method: "POST", body: { code: code, phone: $("phone").value.trim() } }).then(function (r) {
+      toast(r.message || (r.ok ? "登录成功" : "登录失败"), r.ok ? "ok" : "bad");
+      if (r.ok) { loadStatus(); loadHistory(7); }
+    }).catch(function (e) { toast(e.message, "bad"); })
+      .finally(function () { btn.disabled = false; });
+  });
+
+  $("btnQr").addEventListener("click", function () {
+    var btn = this; btn.disabled = true;
+    $("qrState").textContent = "生成中…";
+    api("/login/qr", { method: "POST" }).then(function (r) {
+      if (!r || !r.ok) { toast((r && r.message) || "生成失败", "bad"); $("qrState").textContent = "失败"; return; }
+      $("qrBox").innerHTML = '<img alt="登录二维码" src="' + r.image + '">';
+      $("qrState").textContent = "待扫码";
+      startQrCountdown(r.qr_id, r.expires_in || 150);
+    }).catch(function (e) {
+      toast("生成失败：" + e.message, "bad"); $("qrState").textContent = "失败";
+    }).finally(function () { btn.disabled = false; });
+  });
+
+  function startQrCountdown(qrId, ttl) {
+    clearInterval(state.qrTimer);
+    var end = Date.now() + ttl * 1000;
+    state.qrTimer = setInterval(function () {
+      var left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      $("qrLeft").textContent = left + " 秒";
+      if (left <= 0) {
+        clearInterval(state.qrTimer);
+        $("qrState").textContent = "已过期";
+        $("qrLeft").textContent = "—";
+        return;
+      }
+      api("/login/qr/" + qrId).then(function (s) {
+        if (!s) return;
+        if (s.status === "confirmed") {
+          clearInterval(state.qrTimer);
+          $("qrState").innerHTML = '<span style="color:var(--ok)">登录成功</span>';
+          $("qrLeft").textContent = "—";
+          toast("扫码登录成功" + (s.account ? "：" + s.account : ""), "ok");
+          loadStatus(); loadHistory(7);
+        } else if (s.status === "expired") {
+          clearInterval(state.qrTimer);
+          $("qrState").textContent = "已过期";
+          $("qrLeft").textContent = "—";
+        } else if (s.status === "failed") {
+          clearInterval(state.qrTimer);
+          $("qrState").textContent = "失败";
+          toast(s.message || "扫码失败", "bad");
+        } else {
+          $("qrState").textContent = "待扫码";
+        }
+      }).catch(function () {});
+    }, 2000);
+  }
+
+  $("btnBindAdd").addEventListener("click", function () {
+    var umo = $("bindUmo").value.trim();
+    if (!umo) { toast("填 unified_msg_origin", "bad"); return; }
+    api("/bindings", { method: "POST", body: { action: "add", umo: umo } }).then(function (r) {
+      toast(r && r.ok ? "已添加" : "已存在或无效", r && r.ok ? "ok" : "bad");
+      $("bindUmo").value = "";
+      loadBindings(); loadStatus();
+    });
+  });
+
+  $("bindList").addEventListener("click", function (ev) {
+    var target = ev.target;
+    if (!target || !target.dataset || !target.dataset.remove) return;
+    var umo = decodeURIComponent(target.dataset.remove);
+    api("/bindings", { method: "POST", body: { action: "remove", umo: umo } }).then(function () {
+      toast("已删除", "ok");
+      loadBindings(); loadStatus();
+    });
+  });
+
+  $("btnSaveSchedule").addEventListener("click", function () {
+    api("/settings", {
+      method: "POST",
+      body: {
+        enable_schedule: $("enableSchedule").checked,
+        run_time: $("runTime").value.trim(),
+      },
+    }).then(function (r) {
+      toast(r && r.ok ? "已保存" : ((r && r.message) || "保存失败"), r && r.ok ? "ok" : "bad");
+      loadStatus();
+    });
+  });
+
+  document.querySelectorAll("[data-days]").forEach(function (btn) {
+    btn.addEventListener("click", function () { loadHistory(parseInt(btn.dataset.days, 10)); });
+  });
+
+  function init() {
+    loadStatus().then(function () {
+      loadHistory(7); loadBindings(); loadSettings(); loadLog(); schedulePoll();
+    });
+  }
+
+  if (document.readyState === "complete") init();
+  else window.addEventListener("load", init);
+})();
+</script>
+</body>
+</html>

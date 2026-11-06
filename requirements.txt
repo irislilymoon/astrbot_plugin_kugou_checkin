@@ -1,0 +1,3 @@
+# 本插件不引入额外 Python 依赖：
+# - HTTP 通知复用 AstrBot 自带的 aiohttp
+# - 二维码由 Node 侧车生成，Python 只做 base64 转发

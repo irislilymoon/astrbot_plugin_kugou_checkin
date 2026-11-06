@@ -1,0 +1,11 @@
+{
+  "metadata": {
+    "display_name": "酷狗签到",
+    "desc": "酷狗概念版 VIP 每日签到。Node 侧车执行领取，支持扫码/手机号登录、每日定时与补跑、QQ 推送降级、面板管理。"
+  },
+  "pages": {
+    "checkin": {
+      "title": "酷狗签到"
+    }
+  }
+}
