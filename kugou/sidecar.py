@@ -195,8 +195,13 @@ class Sidecar:
         code, out = await self._exec([self.node_exe, "-v"], cwd=self.plugin_dir, timeout=20)
         text = strip_ansi(out).strip()
         m = re.search(r"v(\d+)\.", text)
-        if code != 0 or not m:
-            raise SidecarError(f"无法执行 node（{self.node_exe}）：{text[:200]}")
+        if code == 127 or not m:
+            raise SidecarError(
+                f"找不到可用的 Node（当前解析为 {self.node_exe}）。"
+                "请先安装 Node 20 或更高版本，或在插件配置里把 node_path 指到 node 可执行文件"
+                "（Windows 形如 C:\\Program Files\\nodejs\\node.exe，Linux 一般是 /usr/bin/node）。"
+                f"原始输出：{text[:160]}"
+            )
         return int(m.group(1)), text
 
     # ---------- bootstrap ----------
@@ -256,23 +261,71 @@ class Sidecar:
         archive = self.plugin_dir / "vendor" / "kgcheckin-src.tar.gz"
         if not archive.is_file():
             raise SidecarError(f"缺少源码快照 {archive}")
+
         if self.code_dir.exists():
             self._say("清理旧的代码目录…")
             await asyncio.to_thread(shutil.rmtree, self.code_dir, True)
         self.code_dir.mkdir(parents=True, exist_ok=True)
-        self._say(f"解压源码快照（{archive.name}）…")
+
+        # 配了 source_url 就先试上游最新代码，失败回落内置快照
+        source = str(self.config.get("source_url") or "").strip()
+        downloaded = None
+        if source:
+            try:
+                downloaded = await self._download_source(source)
+            except Exception as e:
+                self._say(f"[WARN] 上游源码下载失败（{e}），改用内置快照")
+
+        target = downloaded or archive
+        self._say(f"解压源码（{'上游下载' if downloaded else archive.name}）…")
 
         def _extract() -> None:
-            with tarfile.open(archive, "r:gz") as tf:
+            with tarfile.open(target, "r:gz") as tf:
                 try:
                     # Python 3.12+ 支持 filter；3.14 起默认过滤，显式写更稳
                     tf.extractall(self.code_dir, filter="data")
                 except TypeError:
                     tf.extractall(self.code_dir)
 
-        await asyncio.to_thread(_extract)
+        try:
+            await asyncio.to_thread(_extract)
+        finally:
+            if downloaded is not None:
+                try:
+                    Path(downloaded).unlink(missing_ok=True)
+                except OSError:
+                    pass
+
+        # codeload 的 tarball 带一层 <owner>-<repo>-<sha>/ 目录，压平
+        if not (self.code_dir / "main.js").is_file():
+            subdirs = [p for p in self.code_dir.iterdir() if p.is_dir()]
+            for sub in subdirs:
+                if (sub / "main.js").is_file():
+                    for item in list(sub.iterdir()):
+                        shutil.move(str(item), str(self.code_dir / item.name))
+                    shutil.rmtree(sub, ignore_errors=True)
+                    break
         if not (self.code_dir / "main.js").is_file():
             raise SidecarError("解压后未找到 main.js，源码包结构异常")
+
+    async def _download_source(self, url: str) -> str:
+        """下载上游 tarball 到临时文件，返回路径。"""
+        import urllib.request
+
+        self._say(f"下载上游源码：{url}")
+        tmp = self.code_dir.parent / f".src-{int(time.time())}.tar.gz"
+
+        def _fetch() -> None:
+            req = urllib.request.Request(url, headers={"User-Agent": "astrbot-plugin-kugou-checkin"})
+            with urllib.request.urlopen(req, timeout=120) as resp, tmp.open("wb") as f:
+                shutil.copyfileobj(resp, f)
+
+        await asyncio.to_thread(_fetch)
+        if tmp.stat().st_size < 1024:
+            tmp.unlink(missing_ok=True)
+            raise SidecarError("下载内容过小，可能不是 tarball")
+        self._say(f"[OK] 已下载 {tmp.stat().st_size // 1024} KB")
+        return str(tmp)
 
     async def _npm_install(self, custom: bool) -> None:
         registry = "https://registry.npmmirror.com"

@@ -4,6 +4,22 @@
 
 签到与登录逻辑来自 **[develop202/kgcheckin](https://github.com/develop202/kgcheckin)**（GitHub Actions 版酷狗概念 VIP 自动签到），其 `api/` 层来自 [MakcRe/KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)。本插件只做 AstrBot 适配（调度、登录状态机、QQ 推送、面板），不重写协议。
 
+## 安装（3 分钟）
+
+**前置条件**：AstrBot 4.29+，本机有 Node 20 以上（`node -v` 能输出版本号）。
+
+1. AstrBot 面板 → 插件 → 从仓库安装，填：
+   ```
+   https://github.com/irislilymoon/astrbot_plugin_kugou_checkin
+   ```
+2. 启用插件，侧栏出现「酷狗签到」页签
+3. 打开面板，点 **初始化 / 重建侧车**，等 1-3 分钟（解压源码 + `npm ci` + 打补丁）
+4. 登录：点「生成二维码」用酷狗音乐 APP 扫，或在 QQ 里发 `/酷狗登录 13800138000`
+5. 在 QQ 私聊里发一次 `/酷狗签到` —— 会自动把当前会话设为推送目标
+6. 需要每天自动跑，再打开面板里的「每日定时」
+
+没装 Node 会提示「找不到可用的 Node」，装完 Node 或在插件配置里填 `node_path` 即可。
+
 ## 为什么不重写成 Python
 
 上游 `api/` 是完整的酷狗客户端协议实现（请求签名、加密、pako 解压），重写等于复刻整个协议，上游一改就失效。所以：
@@ -11,6 +27,7 @@
 - Node 代码不打包进插件包（全量依赖 277 个包、约 122 MB）
 - 首次启用时 bootstrap：解压源码快照 → `npm ci --omit=dev` → 打补丁 → `node --check`
 - 配置项 `sidecar_dir` 可指向已有代码目录，跳过 bootstrap
+- 配置项 `source_url` 可让 bootstrap 改从上游下载最新代码，失败自动回落内置快照
 
 ## 关键约束
 

@@ -29,6 +29,12 @@
     "default": "",
     "hint": "留空使用 PATH 里的 node。要求 Node 20 及以上。"
   },
+  "source_url": {
+    "description": "侧车源码下载地址（可选）",
+    "type": "string",
+    "default": "",
+    "hint": "留空使用内置源码快照。填 https://codeload.github.com/develop202/kgcheckin/tar.gz/refs/heads/main 可拉取上游最新代码；下载失败会自动回落到内置快照。"
+  },
   "keep_history_days": {
     "description": "历史记录保留天数",
     "type": "int",
