@@ -45,9 +45,9 @@ from kugou.store import Store, now_cn, today_str, token_fingerprint  # noqa: E40
 
 LOGIN_HELP = (
     "登录方式：\n"
-    "1. /酷狗登录 扫码 —— 生成二维码，用酷狗音乐 APP 扫\n"
-    "2. /酷狗登录 13800138000 —— 发送短信验证码\n"
-    "3. /酷狗登录 验证码 123456 —— 用验证码换 token"
+    "1. /酷狗签到登录 扫码 —— 生成二维码，用酷狗音乐 APP 扫\n"
+    "2. /酷狗签到登录 13800138000 —— 发送短信验证码\n"
+    "3. /酷狗签到登录 验证码 123456 —— 用验证码换 token"
 )
 
 
@@ -162,7 +162,7 @@ class KugouCheckinPlugin(Star):
         if self._running:
             return {"ok": False, "message": "已有任务在运行，请稍候"}
         if not self.store.has_login():
-            return {"ok": False, "message": "还没有登录态，先执行 /酷狗登录 扫码"}
+            return {"ok": False, "message": "还没有登录态，先执行 /酷狗签到登录 扫码"}
 
         self._running = True
         self._run_started = time.time()
@@ -265,7 +265,7 @@ class KugouCheckinPlugin(Star):
     @filter.command("酷狗签到")
     async def cmd_checkin(self, event: AstrMessageEvent):
         if not self.store.has_login():
-            yield event.plain_result("还没有登录态。先用 /酷狗登录 扫码，或 /酷狗登录 <手机号> 走验证码。")
+            yield event.plain_result("还没有登录态。先用 /酷狗签到登录 扫码，或 /酷狗签到登录 <手机号> 走验证码。")
             return
         if self._running:
             yield event.plain_result("已有任务在运行，等这次跑完。")
@@ -298,7 +298,7 @@ class KugouCheckinPlugin(Star):
     async def cmd_status(self, event: AstrMessageEvent):
         yield event.plain_result(self.status_text())
 
-    @filter.command("酷狗登录")
+    @filter.command("酷狗签到登录")
     async def cmd_login(self, event: AstrMessageEvent, arg1: str = "", arg2: str = ""):
         arg1 = (arg1 or "").strip()
         arg2 = (arg2 or "").strip()
@@ -348,7 +348,7 @@ class KugouCheckinPlugin(Star):
                 )
                 return
             if status["status"] in ("expired", "failed"):
-                msg = "二维码已过期，重新 /酷狗登录 扫码" if status["status"] == "expired" else (
+                msg = "二维码已过期，重新 /酷狗签到登录 扫码" if status["status"] == "expired" else (
                     status.get("message") or "扫码登录失败"
                 )
                 await self.context.send_message(umo, MessageChain([Comp.Plain(f"❌ {msg}")]))

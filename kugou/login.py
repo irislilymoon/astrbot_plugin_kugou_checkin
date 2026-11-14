@@ -68,7 +68,7 @@ class LoginManager:
         if res.code == 0 and res.has("发送成功"):
             self.pending_phone = phone
             self.pending_ts = time.time()
-            return {"ok": True, "message": "验证码已发送，5 分钟内回复「/酷狗登录 验证码 <6位数字>」"}
+            return {"ok": True, "message": "验证码已发送，5 分钟内回复「/酷狗签到登录 验证码 <6位数字>」"}
 
         detail = res.tail(6) or res.error or "未知错误"
         return {"ok": False, "message": f"发送失败：{detail}"}
@@ -80,7 +80,7 @@ class LoginManager:
 
         phone = (phone or self.pending_phone or "").strip()
         if not phone or time.time() - self.pending_ts > 600:
-            return {"ok": False, "message": "没有待验证的手机号，请先发送「/酷狗登录 <手机号>」"}
+            return {"ok": False, "message": "没有待验证的手机号，请先发送「/酷狗签到登录 <手机号>」"}
 
         async with self.lock:
             if not self.sidecar.is_ready():
@@ -103,7 +103,7 @@ class LoginManager:
         if res.has("暂不支持多账号绑定手机登录") or res.has("34175"):
             return {
                 "ok": False,
-                "message": "该手机号绑定了多个酷狗账号，接口不支持手机号登录，请改用「/酷狗登录 扫码」",
+                "message": "该手机号绑定了多个酷狗账号，接口不支持手机号登录，请改用「/酷狗签到登录 扫码」",
             }
 
         detail = res.tail(6) or res.error or "未知错误"
